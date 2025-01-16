@@ -1,1 +1,1 @@
-# FUll Stack project "Orbit"
+# "Orbit", just for fun
