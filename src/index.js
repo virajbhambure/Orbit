@@ -1,6 +1,6 @@
 // require('dotenv').config()   //this is right but it hampered the concistancy of code
 import dotenv from "dotenv"
-
+// import app from "./app.js"
 
 import connectDB from "./db/index.js";
 
