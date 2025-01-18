@@ -1,20 +1,21 @@
 // require('dotenv').config()   //this is right but it hampered the concistancy of code
-import dotenv from "dotenv"
-import {app} from "./app.js"
+import dotenv from "dotenv";
+import { app } from "./app.js";
 
 import connectDB from "./db/index.js";
 
-dotenv.config()
+dotenv.config();
 
 connectDB()
-.then(()=>{   
-    app.listen(process.env.PORT||8000),()=>{
-    console.log(`server is running at ${process.env.PORT}`);
-}})
-.catch((err)=>{console.log("MongoDB connect failed!!,Error: ",err)})
-
-
-
+  .then(() => {
+    app.listen(process.env.PORT || 8000),
+      () => {
+        console.log(`server is running at ${process.env.PORT}`);
+      };
+  })
+  .catch((err) => {
+    console.log("MongoDB connect failed!!,Error: ", err);
+  });
 
 /*  // shortcut approch to connect to MongoDB but not preffered by proffessionals
 import express from "express"
