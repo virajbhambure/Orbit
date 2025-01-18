@@ -1,7 +1,7 @@
 import mongoose,{Schema} from "mongoose";
-import json from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';  //jwt
 import bcrypt from "bcrypt";
-import { JsonWebTokenError } from "jsonwebtoken";
+
 
 const userSchema=new Schema({
     username:{
@@ -35,10 +35,10 @@ const userSchema=new Schema({
         type:String,  //cloudinary url
         
     },
-    watchHistory:{
+    watchHistory:[{
         type: Schema.Types.ObjectId,
         ref:"Video"
-    },
+    }],
     password:{
         type:String,
         required:[true,'Password is required']
@@ -48,16 +48,19 @@ const userSchema=new Schema({
     }
 },{timestamps:true});
 
-userSchema.pre("save",async function(next){
-    if(this.isModified("password"))
-    {
-        this.password= bcrypt.hash(this.password,10)  //10 is number of rounds of encryption
+userSchema.pre("save", async function(next){
+    if(!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password,10)
+    next()
+
+   /* {
+        this.password= await bcrypt.hash(this.password,10)  //10 is number of rounds of encryption
         next();
 
     }
     else{
         return next();
-    }
+    } */
 })
 
 userSchema.methods.isPasswordCorrect= async function(password)
@@ -84,7 +87,7 @@ userSchema.methods.generateRefreshToken=function(){
     },
      process.env.REFRESH_TOKEN_SECRET,
     {
-        expiresIn:process.env.REFRESH_TOKEN_SECRET
+        expiresIn:process.env.REFRESH_TOKEN_EXPIRY
     })
 }
 
