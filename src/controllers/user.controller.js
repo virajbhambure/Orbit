@@ -366,6 +366,81 @@ const updateUserCoverImage = asyncHandler(async(req,res)=>{
 
 })
 
+const getUserChannelProfile= asyncHandler(async(req,res)=>{
+   const {username}=req.params
+   if(! username?.trim())
+   {
+    throw new apiError(400,"Username is missing");
+   }
+   //at this line we should have username 
+   // first way : user.find({username})
+   //second and optimized way
+   const channel = await user.aggregate([{
+    $match:{
+      username: username?.toLowerCase()
+    }
+   },
+   {
+    $lookup:{ //remember: in DB all fields gets saved in plural form and in lowercase example: Subscription --> "subscriptions"
+      from: "subscriptions",   //plural and lowercase
+      localField:"_id",
+      foreignField:"channel",
+      as:"subscribers"
+    }
+   },
+  {
+    $lookup:{
+      from: "subscriptions",   //plural and lowercase
+      localField:"_id",
+      foreignField:"subscriber",
+      as:"subscribedTo"
+    }
+  },
+  {
+    $addFields:{
+    subscribersCount:{
+      $size:"$subscribers"
+    },
+    channelsSubscribedToCount:{
+      $size:"$subscribedTo"
+    },
+    isSubscribed:{
+      $cond:{
+        if:{ $in:[req.user?._id,"$subscribers.subscriber"]},
+        then:true,
+        else: false
+      }
+    }
+    }
+  },
+  {
+  //$project allows the db to share information which user wants to see not all information is shared
+  // 1 is for allowing to share 
+  $project:{  
+    fullName: 1,
+    username:1,
+    subscribersCount:1,
+    channelsSubscribedToCount:1,
+    isSubscribed:1,
+    avatar:1,
+    coverImage:1,
+    email:1
+
+  }
+  }])
+  console.log(channel)
+if(!channel?.length)
+{
+  throw new apiError(404,"Channel does not exists")
+}
+return res.status(200)
+.json(
+  new apiResponce(200,channel[0],"User channel fetched successfully")
+);
+
+})
+
+
 export { 
   registerUser,
   loginUser, 
@@ -375,4 +450,5 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage};
+  updateUserCoverImage,
+  getUserChannelProfile};
