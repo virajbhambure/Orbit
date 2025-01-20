@@ -4,6 +4,7 @@ import { user } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponce } from "../utils/apiResponce.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 //"generateRefreshAndAccessTokens" this method is created saperatly because we will need it many times to use in code
 const generateRefreshAndAccessTokens = async (userId) => {
@@ -440,6 +441,59 @@ return res.status(200)
 
 })
 
+const getWatchHistory=asyncHandler(async(req,res)=>{
+  const User= await user.aggregate([
+    {
+      $match:{
+         //in agregation we need to convert req.user._id which is string bydefault to proper acceptable format by mongoDB
+         //out of this agregation where we have used object ids previously mongoose was converting that id from string to
+         //format of mongoDB so we didnt notice it but here we need to convert it 
+        _id : new mongoose.Types.ObjectId(req.user._id)   
+  
+      }
+    },      // in above pipeline we have collected the videos watch history of current user now in next pipeline we will find 
+            //information releted to each video such as owner of a video , his number of subscribers etc
+    {
+      $lookup:{
+        from: "video",
+        localField:"watchHistory",
+        foreignField:"_id",
+        as:"watchHistory",
+        pipeline:[
+          {
+            $lookup:{
+              from: "users",
+              localField:"owner",
+              foreignField:"_id",
+              as:"owner",
+              pipeline:[{
+                $project:{
+                  fullName:1,
+                  username:1,
+                  avatar:1
+                }}
+              ]
+            }
+          },//here we have got all essential information such as owner details of each video of watch history
+            // but want to do further segregation of data which make easy to work with for fronend developer
+          {
+            $addFields:{
+              owner:{
+                $first:"$owner"
+              }
+            }
+          }
+        ]
+
+      }
+    }
+  ])
+
+  return res
+  .status(200)
+  .json(new apiResponce(200 ,User[0].watchHistory,"Watch History Fetched Successfully"))
+})
+
 
 export { 
   registerUser,
@@ -451,4 +505,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getUserChannelProfile};
+  getUserChannelProfile,
+  getWatchHistory };
