@@ -38,7 +38,7 @@ router.route("/logout").post(verifyJWT, logoutUser); // here we first verify use
 router.route("/refresh-token").post(refreshAccessToken,)  // here we need not to worry about verifying
 router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
-router.route("/update-account").patch(verifyJWT, updateAccountDetails)
+router.route("/update-account-details").patch(verifyJWT, updateAccountDetails)
 
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar)
 router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)

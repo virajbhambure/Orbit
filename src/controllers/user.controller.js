@@ -203,311 +203,302 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new apiResponce(200, {}, "User logged out"));
 });
 
-const refreshAccessToken = asyncHandler(async(req,res)=>{
-    const incomingRefershToken=req.cookies.refreshToken || req.body.refreshToken 
-    if(!incomingRefershToken)
-    {
-      throw new apiError(401,"unauthorized access request")
-    };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefershToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingRefershToken) {
+    throw new apiError(401, "unauthorized access request");
+  }
 
   try {
-     const decodedToken =  jwt.verify(
-          incomingRefershToken,
-          process.env.REFRESH_TOKEN_SECRET
-         )
-       const userFound= await user.findById(decodedToken?._id)
-       if(!userFound)
-        {
-          throw new apiError(401,"Invalid refresh token")
-        };
-  
-        // now we have both incoming refresh token and saved refresh token in DB so now compair both tokens
-        if(incomingRefershToken !==user?.refreshToken)
-        {
-          throw new apiError(401,"refresh token is expired or used");
-  
-        }
-  
-        //at this line we can say both tokens are same so now we can generate new token
-        const options={
-          httpOnly:true,
-          secure:true
-        }
-       const{accessToken,newRefreshToken} =await generateRefreshAndAccessTokens(user._id)
-  
-        return res
-        .status(200)
-        .cookie("accessToken",accessToken,options)
-        .cookie("refreshToken",newRefreshToken,options)
-        .json(
-          200,
-          { accessToken,newRefreshToken },
-          "Access Token Refreshed")
-          
+    const decodedToken = jwt.verify(
+      incomingRefershToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const userFound = await user.findById(decodedToken?._id);
+    if (!userFound) {
+      throw new apiError(401, "Invalid refresh token");
+    }
+
+    // now we have both incoming refresh token and saved refresh token in DB so now compair both tokens
+    if (incomingRefershToken !== user?.refreshToken) {
+      throw new apiError(401, "refresh token is expired or used");
+    }
+
+    //at this line we can say both tokens are same so now we can generate new token
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    const { accessToken, newRefreshToken } =
+      await generateRefreshAndAccessTokens(user._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(200, { accessToken, newRefreshToken }, "Access Token Refreshed");
   } catch (error) {
-   throw new apiError(401,error?.message || "Invalid refresh token")
+    throw new apiError(401, error?.message || "Invalid refresh token");
   }
 });
 
-const changeCurrentPassword= asyncHandler(async(req,res)=>{
+const changeCurrentPassword = asyncHandler(async (req, res) => {
   // console.log(req.body);
-const{oldPassword,newPassword,confirmPassword }=req.body  
-console.log(oldPassword);
-if(!(newPassword===confirmPassword))
-{
-  throw new apiError(401,"New password and confirm password are not same")
-}
-const foundUser= await user.findById(req.user?._id);
-// console.log(foundUser);
-const isPasswordCorrect = await foundUser.isPasswordCorrect(oldPassword);
-// console.log("Password:",isPasswordCorrect);
-if(!isPasswordCorrect)
-{
-  throw new apiError(401,"Invalid Password");
-}
-//at this line old password is verified now changing the password
-foundUser.password=newPassword;
-// console.log(foundUser.password)
-await foundUser.save({validateBeforeSave:false});
-return res
-.status(200)
-.json(new apiResponce(200,{},"Password Changed Successfully"));
-})
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+  console.log(oldPassword);
+  if (!(newPassword === confirmPassword)) {
+    throw new apiError(401, "New password and confirm password are not same");
+  }
+  const foundUser = await user.findById(req.user?._id);
+  // console.log(foundUser);
+  const isPasswordCorrect = await foundUser.isPasswordCorrect(oldPassword);
+  // console.log("Password:",isPasswordCorrect);
+  if (!isPasswordCorrect) {
+    throw new apiError(401, "Invalid Password");
+  }
+  //at this line old password is verified now changing the password
+  foundUser.password = newPassword;
+  // console.log(foundUser.password)
+  await foundUser.save({ validateBeforeSave: false });
+  return res
+    .status(200)
+    .json(new apiResponce(200, {}, "Password Changed Successfully"));
+});
 
-const getCurrentUser= asyncHandler(async(req,res)=>{
-  return res.status(200)
-  .json(new apiResponce(200,req.user,"User fetched successfully"));
-})
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new apiResponce(200, req.user, "User fetched successfully"));
+});
 
-const updateAccountDetails= asyncHandler(async(req,res)=>{
- const{fullName,email,  }=req.body
- if(!(fullName || email))
- {
-  throw new apiError("All fields are required");
- }
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+  console.log(req.body)
+  if (!(fullName || email)) {
+    throw new apiError("All fields are required");
+  }
 
- const updatedUser= user.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set:{
-        fullName : fullName,
-        email: email
-      }
-    },
-    {new:true}
-
-  ).select("-password")
+  const updatedUser = await user
+    .findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          fullName: fullName,
+          email: email,
+        },
+      },
+      { new: true }
+    )
+    .select("-password");
 
   return res
-  .status(200)
-  .json(new apiResponce(200,updatedUser,"Information updated successfully"));
-
-})
+    .status(200)
+    .json(
+      new apiResponce(200, updatedUser, "Information updated successfully")
+    );
+});
 
 // Updating Avatars and cover images
 //we need to take care of two middlewares multer, loggedin users only
 
-const updateUserAvatar = asyncHandler(async(req,res)=>{
-  const avatarLocalPath=req.file?.path
-  if(!avatarLocalPath)
-  {
-    throw new apiError(400,"Avatar file is missing");
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new apiError(400, "Avatar file is missing");
   }
- const avatar= await uploadOnCloudinary(avatarLocalPath);
- if(!avatar)
- {
-  throw new apiError(400,"Error while uploading avatar");
- }
-
- const User=await user.findByIdAndUpdate(
-  req.user?._id,
-  {
-    $set:{
-      avatar:avatar.url
-    }
-  },
-  {new:true}
- ).select("-password")
-
- return res.
- status(200)
- .json(new apiResponce(
-  200,
-  User,
-  "Avatar updated successfully"
- ))
-
-})
-
-const updateUserCoverImage = asyncHandler(async(req,res)=>{
-  const coverImageLocalPath=req.file?.path
-  if(!coverImageLocalPath)
-  {
-    throw new apiError(400,"Cover Image is missing");
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar) {
+    throw new apiError(400, "Error while uploading avatar");
   }
- const coverImage= await uploadOnCloudinary(coverImageLocalPath);
- if(!coverImage)
- {
-  throw new apiError(400,"Error while uploading Cover Image");
- }
 
- const User=await user.findByIdAndUpdate(
-  req.user?._id,
-  {
-    $set:{
-      coverImage:coverImage.url
-    }
-  },
-  {new:true}
- ).select("-password")
-
- return res.
- status(200)
- .json(new apiResponce(
-  200,
-  User,
-  "Cover Image updated successfully"
- ))
-
-})
-
-const getUserChannelProfile= asyncHandler(async(req,res)=>{
-   const {username}=req.params
-   if(! username?.trim())
-   {
-    throw new apiError(400,"Username is missing");
-   }
-   //at this line we should have username 
-   // first way : user.find({username})
-   //second and optimized way
-   const channel = await user.aggregate([{
-    $match:{
-      username: username?.toLowerCase()
-    }
-   },
-   {
-    $lookup:{ //remember: in DB all fields gets saved in plural form and in lowercase example: Subscription --> "subscriptions"
-      from: "subscriptions",   //plural and lowercase
-      localField:"_id",
-      foreignField:"channel",
-      as:"subscribers"
-    }
-   },
-  {
-    $lookup:{
-      from: "subscriptions",   //plural and lowercase
-      localField:"_id",
-      foreignField:"subscriber",
-      as:"subscribedTo"
-    }
-  },
-  {
-    $addFields:{
-    subscribersCount:{
-      $size:"$subscribers"
-    },
-    channelsSubscribedToCount:{
-      $size:"$subscribedTo"
-    },
-    isSubscribed:{
-      $cond:{
-        if:{ $in:[req.user?._id,"$subscribers.subscriber"]},
-        then:true,
-        else: false
-      }
-    }
-    }
-  },
-  {
-  //$project allows the db to share information which user wants to see not all information is shared
-  // 1 is for allowing to share 
-  $project:{  
-    fullName: 1,
-    username:1,
-    subscribersCount:1,
-    channelsSubscribedToCount:1,
-    isSubscribed:1,
-    avatar:1,
-    coverImage:1,
-    email:1
-
-  }
-  }])
-  console.log(channel)
-if(!channel?.length)
-{
-  throw new apiError(404,"Channel does not exists")
-}
-return res.status(200)
-.json(
-  new apiResponce(200,channel[0],"User channel fetched successfully")
-);
-
-})
-
-const getWatchHistory=asyncHandler(async(req,res)=>{
-  const User= await user.aggregate([
-    {
-      $match:{
-         //in agregation we need to convert req.user._id which is string bydefault to proper acceptable format by mongoDB
-         //out of this agregation where we have used object ids previously mongoose was converting that id from string to
-         //format of mongoDB so we didnt notice it but here we need to convert it 
-        _id : new mongoose.Types.ObjectId(req.user._id)   
-  
-      }
-    },      // in above pipeline we have collected the videos watch history of current user now in next pipeline we will find 
-            //information releted to each video such as owner of a video , his number of subscribers etc
-    {
-      $lookup:{
-        from: "video",
-        localField:"watchHistory",
-        foreignField:"_id",
-        as:"watchHistory",
-        pipeline:[
-          {
-            $lookup:{
-              from: "users",
-              localField:"owner",
-              foreignField:"_id",
-              as:"owner",
-              pipeline:[{
-                $project:{
-                  fullName:1,
-                  username:1,
-                  avatar:1
-                }}
-              ]
-            }
-          },//here we have got all essential information such as owner details of each video of watch history
-            // but want to do further segregation of data which make easy to work with for fronend developer
-          {
-            $addFields:{
-              owner:{
-                $first:"$owner"
-              }
-            }
-          }
-        ]
-
-      }
-    }
-  ])
+  const User = await user
+    .findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          avatar: avatar.url,
+        },
+      },
+      { new: true }
+    )
+    .select("-password");
 
   return res
-  .status(200)
-  .json(new apiResponce(200 ,User[0].watchHistory,"Watch History Fetched Successfully"))
-})
+    .status(200)
+    .json(new apiResponce(200, User, "Avatar updated successfully"));
+});
 
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+  if (!coverImageLocalPath) {
+    throw new apiError(400, "Cover Image is missing");
+  }
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  if (!coverImage) {
+    throw new apiError(400, "Error while uploading Cover Image");
+  }
 
-export { 
+  const User = await user
+    .findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          coverImage: coverImage.url,
+        },
+      },
+      { new: true }
+    )
+    .select("-password");
+
+  return res
+    .status(200)
+    .json(new apiResponce(200, User, "Cover Image updated successfully"));
+});
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+  if (!username?.trim()) {
+    throw new apiError(400, "Username is missing");
+  }
+  //at this line we should have username
+  // first way : user.find({username})
+  //second and optimized way
+  const channel = await user.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        //remember: in DB all fields gets saved in plural form and in lowercase example: Subscription --> "subscriptions"
+        from: "subscriptions", //plural and lowercase
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions", //plural and lowercase
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      //$project allows the db to share information which user wants to see not all information is shared
+      // 1 is for allowing to share
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+  console.log(channel);
+  if (!channel?.length) {
+    throw new apiError(404, "Channel does not exists");
+  }
+  return res
+    .status(200)
+    .json(
+      new apiResponce(200, channel[0], "User channel fetched successfully")
+    );
+});
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const User = await user.aggregate([
+    {
+      $match: {
+        //in agregation we need to convert req.user._id which is string bydefault to proper acceptable format by mongoDB
+        //out of this agregation where we have used object ids previously mongoose was converting that id from string to
+        //format of mongoDB so we didnt notice it but here we need to convert it
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    }, // in above pipeline we have collected the videos watch history of current user now in next pipeline we will find
+    //information releted to each video such as owner of a video , his number of subscribers etc
+    {
+      $lookup: {
+        from: "video",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          }, //here we have got all essential information such as owner details of each video of watch history
+          // but want to do further segregation of data which make easy to work with for fronend developer
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new apiResponce(
+        200,
+        User[0].watchHistory,
+        "Watch History Fetched Successfully"
+      )
+    );
+});
+
+export {
   registerUser,
-  loginUser, 
-  logoutUser ,
-  refreshAccessToken ,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory };
+  getWatchHistory,
+};
