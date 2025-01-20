@@ -250,21 +250,25 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
 });
 
 const changeCurrentPassword= asyncHandler(async(req,res)=>{
-const{oldPassword,newPassword,confirmPassword}=req.body
-
+  // console.log(req.body);
+const{oldPassword,newPassword,confirmPassword }=req.body  
+console.log(oldPassword);
 if(!(newPassword===confirmPassword))
 {
   throw new apiError(401,"New password and confirm password are not same")
 }
-const User= user.findById(req.user?._id);
-const isPasswordCorrect = await User.isPasswordCorrect(oldPassword);
+const foundUser= await user.findById(req.user?._id);
+// console.log(foundUser);
+const isPasswordCorrect = await foundUser.isPasswordCorrect(oldPassword);
+// console.log("Password:",isPasswordCorrect);
 if(!isPasswordCorrect)
 {
   throw new apiError(401,"Invalid Password");
 }
 //at this line old password is verified now changing the password
-User.password=newPassword;
-await user.save({validateBeforeSave:false});
+foundUser.password=newPassword;
+// console.log(foundUser.password)
+await foundUser.save({validateBeforeSave:false});
 return res
 .status(200)
 .json(new apiResponce(200,{},"Password Changed Successfully"));
