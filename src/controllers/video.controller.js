@@ -4,7 +4,7 @@ import {user} from "../models/user.model.js"
 import {apiError} from "../utils/apiError.js"
 import {apiResponse} from "../utils/apiResponce.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary,deleteFromCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -119,10 +119,72 @@ const updateVideo = asyncHandler(async (req, res) => {
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
+    if(!videoId){
+        throw new apiError(404,"VideoId is missing");
+    }
+    const video = await Video.findById(videoId);
+    if(!video)
+    {
+        throw new apiError("Video not found");
+    }
+    try {
+          // Example of Cloudinary URL:
+          // https://res.cloudinary.com/demo/video/upload/v1618763257/sample_video.mp4
+          // In this URL, 'sample_video' is the public ID and 'video/mp4' is the format.
+
+          // Extract the public ID of the video from its Cloudinary URL
+          const videoPublicId = video.videoFile.split("/").pop().split(".")[0]; 
+
+          // Extract the public ID of the thumbnail from its Cloudinary URL
+          const thumbnailPublicId = video.thumbnail.split("/").pop().split(".")[0]; 
+
+          // Explanation:
+          // 1. Split the URL by "/" to get the file name (e.g., "sample_video.mp4").
+          // 2. Use .pop() to get the last element, which is the file name.
+          // 3. Split the file name by "." and take the first part to get the public ID (e.g., "sample_video").
+         const videoDeletedResult= await deleteFromCloudinary(videoPublicId);
+         const thumbnailDeletedResult= await deleteFromCloudinary(thumbnailPublicId);
+
+         if (!videoDeletedResult || !thumbnailDeletedResult) {
+            throw new apiError(500, "Failed to delete video or thumbnail from Cloudinary");
+        }
+        
+      //  now delete the entry of video from database
+      await Video.findByIdAndDelete(videoId);
+
+      res
+      .status(200)
+      .json(new apiResponse(200, "Video deleted successfully"));
+
+        
+    } catch (error) {
+        throw new apiError(500,"Error in deleting video or thumbnail from cloudinary",error.message);
+        
+    }
+
+   
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
+    if(!videoId)
+    {
+        throw new apiError(404,"Video Id is missing");
+    }
+    const video= await Video.findById(videoId);
+
+    if(!video)
+    {
+        throw new apiError(404,"Video not found");
+    }
+
+    //Toggle the publish status (if true, set to false; if false, set to true)
+    video.isPublished =!video.isPublished;
+    const updatedVideo= await video.save();
+    res
+    .status(200)
+    .json(new apiResponce(200,"Video published status toggled successfully",updatedVideo));
 })
 
 export {
