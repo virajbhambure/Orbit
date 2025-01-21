@@ -74,7 +74,46 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+    const { title,description,thumbnail}=req.body
 
+    if(!title && !description && !thumbnail)
+    {
+        throw new apiError(400,"Atleast one field is required");
+    }
+
+    //all field will be available at this point
+    const video=await Video.findById(videoId)
+    if(!video)
+    {
+        throw new apiError(404,"Video not found");
+    }
+    if(title)
+    {
+        video.title=title;
+    }
+    if(description)
+    {
+        video.description=description;
+    }
+
+    if(thumbnail)
+    {
+        const uploadThumbnail=await uploadOnCloudinary(thumbnail,"thumbnails",{
+            resource_type:"image",
+            eager:[{format:"jpg",transformation:{width:300, crop:"scale"}}]
+        });
+
+        if(!uploadThumbnail || !uploadThumbnail.eager[0].url)
+            {
+                throw new apiError(500,"Thumbnail upload failed");
+            }
+            video.thumbnail=uploadThumbnail.eager[0].url;
+    }
+
+    const updatedVideo=await video.save();
+    res.
+    status(200)
+    .json(new apiResponce(200,"Video updated successfully",updatedVideo));
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
