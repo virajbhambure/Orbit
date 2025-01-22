@@ -124,6 +124,7 @@ if (!owner) {
     .json(new apiResponce(200, "video published successfully", video));
 });
 
+//in getVideoById i need to provide video id in url 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
