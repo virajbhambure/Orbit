@@ -9,17 +9,35 @@ import {
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 
+
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
-  //TODO: get all videos based on query, sort, pagination
-  const videos = await Video.aggregate([
-    {
-      $match: {
+  const { page = 1, limit = 10, query = "", sortBy = "createdAt", sortType = "desc", userId } = req.query;
+
+  // Ensure query is a string for regex usage
+  if (typeof query !== "string") {
+    throw new apiError(400, "Query parameter must be a string");
+  }
+
+  // Construct the match object based on the query
+  const matchQuery = query
+    ? {
         $or: [
           { title: { $regex: query, $options: "i" } },
           { description: { $regex: query, $options: "i" } },
         ],
-      },
+      }
+    : {}; // If no query, match all videos
+
+  // Construct sorting dynamically
+  const sortCondition = {};
+  if (sortBy) {
+    sortCondition[sortBy] = sortType === "asc" ? 1 : -1;
+  }
+
+  // Aggregation pipeline
+  const videos = await Video.aggregate([
+    {
+      $match: matchQuery,
     },
     {
       $lookup: {
@@ -46,9 +64,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
       },
     },
     {
-      $sort: {
-        [sortBy]: sortType === "asc" ? 1 : -1,
-      },
+      $sort: sortCondition,
     },
     {
       $skip: (page - 1) * limit,
@@ -56,16 +72,11 @@ const getAllVideos = asyncHandler(async (req, res) => {
     {
       $limit: parseInt(limit),
     },
-    // Exclude videos uploaded by the current user
-    {
-      $match: {
-        owner: { $ne: mongoose.Types.ObjectId(userId) },
-      },
-    },
   ]);
 
   return res.status(200).json(new apiResponce(200, { videos }, "All videos"));
 });
+
 
 const publishAVideo = asyncHandler(async (req, res) => {
   console.log(req.body)
