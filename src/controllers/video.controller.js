@@ -141,7 +141,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     .status(200)
     .json(new apiResponce(200, "Video fetched successfully", video));
 });
-
+//in updateVideo i need to provide video id in url
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
@@ -230,14 +230,18 @@ const deleteVideo = asyncHandler(async (req, res) => {
   }
 });
 
+//togglePublishStatus need videoId to be provided in url
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-
+  console.log(videoId);
   if (!videoId) {
     throw new apiError(404, "Video Id is missing");
   }
+  if (!mongoose.Types.ObjectId.isValid(videoId)) {
+    throw new apiError(400, "Invalid Video ID format");
+  }
   const video = await Video.findById(videoId);
-
+  console.log(video);
   if (!video) {
     throw new apiError(404, "Video not found");
   }
