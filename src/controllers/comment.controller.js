@@ -1,7 +1,7 @@
 import mongoose from "mongoose"
 import {comment} from "../models/comment.model.js"
 import {apiError} from "../utils/apiError.js"
-import {apiResponce} from "../utils/apiResponse.js"
+import {apiResponce} from "../utils/apiResponce.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
@@ -156,8 +156,8 @@ const deleteComment = asyncHandler(async (req, res) => {
     if (existingComment.owner.toString() !== userId) {
         throw new apiError(404, "You are not authorized to delete this comment");
     }
-   const commemtStatus= await comment.findByIdAndDelete(commentId);
-   if(!commemtStatus)
+   const commentStatus= await comment.findByIdAndDelete(commentId);
+   if(!commentStatus)
    {
     throw new apiError(500,"Error while deleting comment from database");
    }
