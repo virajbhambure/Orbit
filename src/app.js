@@ -24,7 +24,7 @@ import videoRouter from "./routes/video.routes.js"
 
 app.use("/api/v1/users", userRouter);
 //we have saperated routes so for using it we neet to use middlewares so we used app.use()
-
-app.use("/api/v1/videos", videoRouter)
 // http://localhost:8000/api/v1/users/register
+app.use("/api/v1/videos", videoRouter)
+
 export { app };
