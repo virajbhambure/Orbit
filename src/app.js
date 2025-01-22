@@ -20,11 +20,14 @@ app.use(cookieParser());
 //Routes importing
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js"
+import commentRouter from "./routes/comment.routes.js"
 //routes decleration
 
 app.use("/api/v1/users", userRouter);
 //we have saperated routes so for using it we neet to use middlewares so we used app.use()
 // http://localhost:8000/api/v1/users/register
 app.use("/api/v1/videos", videoRouter)
+app.use("/api/v1/comments", commentRouter)
+
 
 export { app };
