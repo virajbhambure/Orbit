@@ -1,4 +1,4 @@
-import mongoose,{Schema} from mongoose
+import mongoose,{Schema} from "mongoose"
 
 const likeSchema= new Schema({
     video:{
@@ -18,6 +18,6 @@ const likeSchema= new Schema({
         ref:"user"
     }
 
-},{timestamps:true})
+},{timestamps:true});
 
 export const like=mongoose.model("like",likeSchema);

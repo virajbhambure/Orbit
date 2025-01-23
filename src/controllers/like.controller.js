@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
-import { user } from "../models/user.model.js";
+import { like } from "../models/like.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponce } from "../utils/apiResponce.js";
 import jwt from "jsonwebtoken";
@@ -19,7 +19,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     const isExist=await like.findOne(
         {
             video:videoId,
-            likedBy:req.user._id;
+            likedBy:req.user._id
         }
     )
 
@@ -36,16 +36,12 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         await like.create(
             {
                 video:videoId,
-                likedBy:req.user._id;
+                likedBy:req.user._id
             }
         )
         return res
         .status(200)
-        .json(
-            {
-                200,"Liked successfully"
-            }
-        )
+        .json(new apiResponce(200,"Liked successfully") )
     }
 
 })
@@ -63,7 +59,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     const existingLike= await like.findOne(
         {
             comment:commentId,
-            likedBy:req.user._id;
+            likedBy:req.user._id
         }
     );
     if (existingLike) {
@@ -121,14 +117,15 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 }
 )
 
-const getlikedVideos = asyncHandler(async (req, res) => {
+const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
 
+    
     const userId= req.user._id;
     const likedVideos=await like.find(
         {
             likedBy:userId,
-            video:{$exist:true}
+            video:{$exists:true}
         }
     ).populate('video');  //it will show only videos liked by user
     if(!likedVideos || likedVideos.length===0)
