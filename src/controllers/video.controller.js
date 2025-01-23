@@ -79,21 +79,21 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 
 const publishAVideo = asyncHandler(async (req, res) => {
-  console.log(req.body)
+  // console.log(req.body)
   const { title, description, owner } = req.body;
   // const ownerId = mongoose.Types.ObjectId.isValid(req.body.owner)
   // ? mongoose.Types.ObjectId(req.body.owner)
   // : null;
-  console.log("1")
+  // console.log("1")
 
 if (!owner) {
   return res.status(400).json({ error: 'Invalid owner ID' });
 }
-  console.log("owner: ",req.body);  
+  // console.log("owner: ",req.body);  
   // TODO: get video, upload to cloudinary, create video
   const { videoFile, thumbnail } = req.files;
   // console.log(videoFile[0].path, thumbnail[0].path);
-  console.log(videoFile,thumbnail)
+  // console.log(videoFile,thumbnail)
   if (!title || !description || !videoFile) {
     throw new apiError(
       400,
@@ -102,7 +102,7 @@ if (!owner) {
   }
   //at this point all information is available
  // console.log("aa", thumbnail[0].path);
- console.log("B")
+//  console.log("B")
 
   const uploadedVideoThumbnail = await uploadOnCloudinary(thumbnail[0]?.path);
   // console.log("UplodedVideoThumbnail:",uploadedVideoThumbnail);
@@ -110,7 +110,7 @@ if (!owner) {
     throw new apiError(500, "Thumbnail generation failed");
   }
 
-  console.log("url:",uploadedVideoThumbnail.url);
+  // console.log("url:",uploadedVideoThumbnail.url);
 
   const uploadedVideo = await uploadOnCloudinary(videoFile[0]?.path);
   console.log("Video:",uploadedVideo);
@@ -119,7 +119,7 @@ if (!owner) {
   }
   // console.Console("Owner:",mongoose.Types.ObjectId(owner));
   //now we have video and thumbnail url also
-  console.log("efnefnce",title,description,owner)
+  // console.log("efnefnce",title,description,owner)
   const video = await Video.create({
     videoFile: uploadedVideo.url,
     thumbnail: uploadedVideoThumbnail.url,

@@ -25,7 +25,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
     if(isExist)
     {
-        await isExist.remove();
+        await like.deleteOne({ _id: isExist._id });
         return res
         .status(200)
         .json(new apiResponce(200,"unliked sucessfully"))
@@ -63,7 +63,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         }
     );
     if (existingLike) {
-        await existingLike.remove();
+        await existingLike.deleteOne({_id:existingLike._id});
         res.status(200).json(apiResponce(200,"Comment unliked successfully"));
     } else {
         await like.create({
@@ -91,7 +91,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
     if(likeExist)
     {
-        const status=await likeExist.remove();
+        const status=await likeExist.deleteOne({_id:likeExist._id})
         if(!status)
         {
             throw new apiError(500,"Error in removing like from tweet");
@@ -127,7 +127,8 @@ const getLikedVideos = asyncHandler(async (req, res) => {
             likedBy:userId,
             video:{$exists:true}
         }
-    ).populate('video');  //it will show only videos liked by user
+    )  //.populate('video');  //it will show only videos liked by user
+      console.log("Liked Videos:",likedVideos)
     if(!likedVideos || likedVideos.length===0)
     {
         return res
