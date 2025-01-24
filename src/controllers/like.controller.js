@@ -127,8 +127,8 @@ const getLikedVideos = asyncHandler(async (req, res) => {
             likedBy:userId,
             video:{$exists:true}
         }
-    )  //.populate('video');  //it will show only videos liked by user
-      console.log("Liked Videos:",likedVideos)
+    ).populate('video');  //it will show only videos liked by user
+    //   console.log("Liked Videos:",likedVideos)
     if(!likedVideos || likedVideos.length===0)
     {
         return res

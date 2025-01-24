@@ -1,28 +1,28 @@
 
 import mongoose,{isValidObjectId} from "mongoose"
 import {like}from "../models/like.model.js"
-import {video} from "../models/video.model.js"
-import {subscription} from "../models/subscription.js"
+import {Video} from "../models/video.model.js"
+import {subscription} from "../models/subscription.model.js"
 import {apiError} from "../utils/apiError.js"
 import {apiResponce} from "../utils/apiResponce.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
 const getChannelStats = asyncHandler(async (req, res) => {
     // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
-    const channelId = req.user.channelId;
+    const {channelId} = req.params;
     if(!isValidObjectId(channelId))
 
         {
             throw new apiError(400,"Invalid channel Id");
         }
     
-        const totalLikes = await video.aggregate([
-            { $match: { channelId: mongoose.Types.ObjectId(channelId) } },
+        const totalLikes = await Video.aggregate([
+            { $match: { channelId} },  // { $match: { channelId: mongoose.Types.ObjectId(channelId) } },
             { $group: { _id: null, totalLikes: { $sum: "$likes" } } }
         ]);
 
-        const totalViews = await video.aggregate([
-            { $match: { channelId: mongoose.Types.ObjectId(channelId) } },
+        const totalViews = await Video.aggregate([
+            { $match: { channelId } },  // { $match: { channelId: mongoose.Types.ObjectId(channelId) } },
             { $group: { _id: null, totalViews: { $sum: "$views" } } }
         ]);
         // Step 1: Filter videos for the specific channelId
@@ -35,9 +35,11 @@ const getChannelStats = asyncHandler(async (req, res) => {
         // Example: If the views of videos are [100, 200, 150], the totalViews will be 450.
     
     const totalSubscribers= await subscription.countDocuments({channelId});
+    const totalVideos= await Video.countDocuments({owner:channelId});
 
     res.status(200).json(
-        apiResponce(200, "Channel stats fetched successfully", {
+
+       new apiResponce(200, "Channel stats fetched successfully", {
             totalVideos,
             totalLikes: totalLikes.length > 0 ? totalLikes[0].totalLikes : 0,
             totalViews: totalViews.length > 0 ? totalViews[0].totalViews : 0,
@@ -50,20 +52,21 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     // TODO: Get all the videos uploaded by the channel
     const{channelId}=req.params;
 
+    // console.log("ChannelID: ",channelId);
     if(!isValidObjectId(channelId))
     {
         throw new apiError(400,"Invalid channelId");
     }
-    const videos = await video.find({ channelId });
+    const videos = await Video.find({ owner: channelId });
     if (videos.length === 0) {
         return res
         .status(404)
-        .json(apiResponce(404, "No videos found for this channel"));
+        .json(new apiResponce(404, "No videos found for this channel"));
     }
 
     res
     .status(200)
-    .json(apiResponce(200, "Videos fetched successfully", videos));
+    .json(new apiResponce(200, "Videos fetched successfully", videos));
 })
 
 export {

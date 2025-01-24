@@ -151,7 +151,8 @@ const loginUser = asyncHandler(async (req, res) => {
   const loggedInUser = await user
     .findById(User._id)
     .select("-password -refreshToken");
-
+  console.log(loggedInUser);
+  
   //now we will make cookies more secure i.e. in frontend user can only see those
   //cokiees and cannot modify those.
   const options = {
